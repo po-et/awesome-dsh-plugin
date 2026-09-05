@@ -1,0 +1,6 @@
+url: https://github.com/po-et/dsh-session-guard
+name: po-et/dsh-session-guard
+category: session
+description:
+  en: 'Per-session advisory locks that stop two dsh processes from corrupting one session log: conflicting steps fail loudly with the owner facts, and locks from dead or stale processes are taken over automatically.'
+  zh: 按会话的咨询锁，阻止两个 dsh 进程写坏同一个会话日志：冲突步骤带属主信息响亮失败，死进程或过期的锁自动接管。
