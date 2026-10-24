@@ -229,9 +229,14 @@ const scanTree = (repo) => once(`scan:${repo}`, async () => {
 
   let sawClient = false
   let vendored = null
+  let unreadable = null
   for (const p of pkgs) {
     const f = await api(`repos/${repo}/contents/${p}`)
-    if (f.status !== 200 || !f.body?.content) continue
+    if (f.status !== 200) {
+      unreadable ??= `\`${p}\` (HTTP ${f.status})`
+      continue
+    }
+    if (!f.body?.content) continue
     const pkg = parsePkg(f.body.content)
     if (!pkg) continue
     const dsh = pkg.dsh ?? {}
@@ -249,6 +254,9 @@ const scanTree = (repo) => once(`scan:${repo}`, async () => {
     }
     if (dsh.client) sawClient = true
   }
+  // A failed read leaves open the possibility that this manifest is the
+  // bundle. A readable client-only package elsewhere cannot rule it out.
+  if (unreadable) return { ok: null, why: `could not read ${unreadable}` }
   if (vendored) {
     return {
       ok: false,
@@ -282,6 +290,9 @@ async function hasBundle(repo, sub) {
   // authoritative, and it is per-entry rather than per-repository, so it stays
   // outside the memoised tree scan below.
   const direct = await api(`repos/${repo}/contents/${sub ? `${sub}/` : ''}package.json`)
+  if (direct.status !== 200 && direct.status !== 404) {
+    return { ok: null, why: `could not read \`${sub ? `${sub}/` : ''}package.json\` (HTTP ${direct.status})` }
+  }
   if (direct.status === 200 && direct.body?.content) {
     const pkg = parsePkg(direct.body.content)
     // An unparseable manifest must not fall through to "looks fine" — it is
